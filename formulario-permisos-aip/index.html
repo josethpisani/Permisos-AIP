@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formulario de Permisos AIP</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- ======== LOGIN SCREEN ======== -->
+  <div id="login-screen">
+    <div class="login-container">
+      <img src="img/logo.png" alt="AIP Logo" class="login-logo-img">
+      <h1>Formulario de Permisos AIP</h1>
+      <p class="subtitle">Sistema de gestión de permisos del personal</p>
+      <div class="profile-selector">
+        <button class="profile-btn" data-profile="empleado">
+          <span class="icon">👤</span>
+          <span><strong>Empleado</strong><br><small>Solicitar y consultar permisos</small></span>
+        </button>
+        <button class="profile-btn" data-profile="admin">
+          <span class="icon">🔧</span>
+          <span><strong>Administrador</strong><br><small>Gestionar, reportes y exportar</small></span>
+        </button>
+      </div>
+      <div class="password-field" id="password-field" style="display:none;">
+        <input type="password" id="password-input" placeholder="Contraseña de administrador">
+      </div>
+      <button class="btn-login" id="btn-entrar" disabled>Entrar</button>
+    </div>
+  </div>
+
+  <!-- ======== APP SCREEN ======== -->
+  <div id="app-screen">
+
+    <!-- Mobile toggle -->
+    <button class="menu-toggle" id="menu-toggle">☰</button>
+    <div class="overlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header" style="text-align:center;">
+        <img src="img/logo.png" alt="AIP" style="width:40px;height:auto;margin-bottom:8px;">
+        <h2>Permisos AIP</h2>
+        <div class="user-badge">Cargando...</div>
+      </div>
+      <nav class="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <button class="btn-logout" id="btn-logout">🚪 Cerrar Sesión</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- VIEW: Formulario (Empleado) -->
+      <div class="view" id="view-form">
+        <div class="page-header">
+          <h1>Solicitar Permiso</h1>
+          <p>Complete el formulario para solicitar un permiso.</p>
+        </div>
+        <div class="page-body">
+          <div class="card">
+            <div class="card-header">
+              <h3 id="form-title">Nueva Solicitud de Permiso</h3>
+            </div>
+            <div class="card-body">
+              <form id="permiso-form">
+                <div class="form-grid">
+                  <div class="form-group full-width">
+                    <label for="form-empleado">Nombre del Empleado *</label>
+                    <input type="text" id="form-empleado" placeholder="Nombre completo" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="form-grupo">Grupo *</label>
+                    <select id="form-grupo" required>
+                      <option value="">Seleccione un grupo</option>
+                      <option value="profesores">Profesores</option>
+                      <option value="administrativos">Administrativos</option>
+                      <option value="mantenimiento">Mantenimiento</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="form-subgrupo">Subgrupo</label>
+                    <select id="form-subgrupo" disabled>
+                      <option value="">Seleccione un subgrupo</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="form-tipo">Tipo de Permiso *</label>
+                    <select id="form-tipo" required>
+                      <option value="">Seleccione un tipo</option>
+                      <option value="permiso Laboral">Permiso Laboral</option>
+                      <option value="permiso Medico">Permiso Médico</option>
+                      <option value="permiso Personal">Permiso Personal</option>
+                      <option value="permiso Academico">Permiso Académico</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="form-ausencia">Tipo de Ausencia *</label>
+                    <select id="form-ausencia" required>
+                      <option value="">Seleccione tipo</option>
+                      <option value="todo el dia">Todo el día</option>
+                      <option value="salida temprana">Salida Temprana</option>
+                      <option value="llegada tarde">Llegada Tarde</option>
+                    </select>
+                  </div>
+                  <div class="form-group" id="form-hora-group" style="display:none;">
+                    <label for="form-hora" id="form-hora-label">Hora</label>
+                    <input type="time" id="form-hora">
+                  </div>
+                  <div class="form-group">
+                    <label for="form-fecha-inicio">Fecha de Inicio *</label>
+                    <input type="date" id="form-fecha-inicio" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="form-fecha-fin">Fecha de Fin *</label>
+                    <input type="date" id="form-fecha-fin" required>
+                  </div>
+                  <div class="form-group full-width">
+                    <label for="form-motivo">Motivo *</label>
+                    <textarea id="form-motivo" placeholder="Describa el motivo del permiso" required></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn btn-secondary" id="btn-cancelar">Cancelar</button>
+                  <button type="submit" class="btn btn-primary">💾 Guardar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: Mis Permisos (Empleado) -->
+      <div class="view" id="view-mis-permisos">
+        <div class="page-header">
+          <h1>Mis Permisos</h1>
+          <p>Consulta el historial de tus permisos solicitados.</p>
+        </div>
+        <div class="page-body">
+          <div class="card">
+            <div class="card-header">
+              <h3>Historial de Permisos</h3>
+            </div>
+            <div class="card-body" id="mis-permisos-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: Dashboard (Admin) -->
+      <div class="view" id="view-dashboard">
+        <div class="page-header">
+          <h1>Dashboard</h1>
+          <p>Resumen general de permisos solicitados.</p>
+        </div>
+        <div class="page-body">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#e8edf5;color:#0a192f;">📊</div>
+              <div class="stat-info">
+                <h4 id="stat-total">0</h4>
+                <p>Total Permisos</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#fef7e0;color:#e37400;">⏳</div>
+              <div class="stat-info">
+                <h4 id="stat-pendientes">0</h4>
+                <p>Pendientes</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#e6f4ea;color:#1e8e3e;">✅</div>
+              <div class="stat-info">
+                <h4 id="stat-aprobados">0</h4>
+                <p>Aprobados</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#fce8e6;color:#c5221f;">❌</div>
+              <div class="stat-info">
+                <h4 id="stat-rechazados">0</h4>
+                <p>Rechazados</p>
+              </div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3>Permisos por Mes</h3>
+            <div style="height:300px;">
+              <canvas id="chart-mensual"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: Todos los Permisos (Admin) -->
+      <div class="view" id="view-permisos">
+        <div class="page-header">
+          <h1>Todos los Permisos</h1>
+          <p>Administración completa de permisos del personal.</p>
+        </div>
+        <div class="page-body">
+          <div class="card">
+            <div class="card-header">
+              <h3>Registro de Permisos</h3>
+            </div>
+            <div class="card-body" id="permisos-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: Reportes (Admin) -->
+      <div class="view" id="view-reportes">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h1>Reportes</h1>
+            <p>Filtre, visualice y exporte los permisos registrados.</p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-success" onclick="App.exportToExcel()">📊 Excel</button>
+            <button class="btn btn-danger" onclick="App.exportToPDF()">📄 PDF</button>
+          </div>
+        </div>
+        <div class="page-body">
+          <!-- Filters -->
+          <div class="filter-bar">
+            <div class="form-group">
+              <label for="filter-busqueda">Buscar</label>
+              <input type="text" id="filter-busqueda" placeholder="Nombre, folio, motivo..." oninput="App.applyReportFilters()">
+            </div>
+            <div class="form-group">
+              <label for="filter-grupo">Grupo</label>
+              <select id="filter-grupo" onchange="App.handleReportGrupoChange(); App.applyReportFilters()">
+                <option value="">Todos</option>
+                <option value="profesores">Profesores</option>
+                <option value="administrativos">Administrativos</option>
+                <option value="mantenimiento">Mantenimiento</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="filter-subgrupo">Subgrupo</label>
+              <select id="filter-subgrupo" disabled onchange="App.applyReportFilters()">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="filter-estado">Estado</label>
+              <select id="filter-estado" onchange="App.applyReportFilters()">
+                <option value="">Todos</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="aprobado">Aprobado</option>
+                <option value="rechazado">Rechazado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="filter-desde">Desde</label>
+              <input type="date" id="filter-desde" onchange="App.applyReportFilters()">
+            </div>
+            <div class="form-group">
+              <label for="filter-hasta">Hasta</label>
+              <input type="date" id="filter-hasta" onchange="App.applyReportFilters()">
+            </div>
+            <div class="form-group">
+              <label for="filter-year">Año</label>
+              <select id="filter-year" onchange="App.handleReportYearChange()">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+            </div>
+            <div class="form-group" style="align-self:flex-end;">
+              <button class="btn btn-secondary btn-sm" onclick="App.clearReportFilters()">Limpiar</button>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+            <div class="stat-card" style="padding:12px 16px;">
+              <div class="stat-info">
+                <h4 id="reporte-total">0</h4>
+                <p>Total filtrados</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div class="chart-container">
+            <h3>Permisos por Mes</h3>
+            <div style="height:250px;">
+              <canvas id="chart-reporte"></canvas>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Registro de Permisos</h3>
+            </div>
+            <div class="card-body" id="reporte-permisos-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
