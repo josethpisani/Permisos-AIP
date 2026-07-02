@@ -24,14 +24,20 @@ function generateId() {
 }
 
 // OBTENER EMPLEADOS
+// OBTENER EMPLEADOS (Integrado directamente para evitar fallos de lectura de archivos en Netlify)
 app.get('/api/empleados', (req, res) => {
     try {
-        const raw = fs.readFileSync(path.join(__dirname, 'empleados.json'), 'utf8');
-        res.json(JSON.parse(raw));
+        const empleados = [
+            { "id": 1, "nombre": "Joseth Pisani " },
+            { "id": 2, "nombre": "Darrel" },
+            { "id": 3, "nombre": "Tomas" }
+        ];
+        res.json(empleados);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al obtener empleados' });
     }
+});
 });
 
 // OBTENER TODOS LOS PERMISOS
