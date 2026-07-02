@@ -1,40 +1,69 @@
-// ========== DATA LAYER ==========
+const API = '/api/permisos';
+const API_EMPLEADOS = '/api/empleados';
+
 const Store = {
-  KEY: 'permisos_aip_data',
+  _cache: null,
+  _empleados: null,
 
-  getAll() {
-    try {
-      return JSON.parse(localStorage.getItem(this.KEY)) || [];
-    } catch { return []; }
+  async getAll(force) {
+    if (force || !this._cache) {
+      const res = await fetch(API);
+      this._cache = await res.json();
+    }
+    return this._cache;
   },
 
-  save(data) {
-    localStorage.setItem(this.KEY, JSON.stringify(data));
+  async add(permiso) {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(permiso),
+    });
+    const saved = await res.json();
+    this._cache = null;
+    return saved;
   },
 
-  add(permiso) {
-    const data = this.getAll();
-    data.push(permiso);
-    this.save(data);
-    return permiso;
+  async update(id, updates) {
+    const res = await fetch(API + '/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    const updated = await res.json();
+    this._cache = null;
+    return updated;
   },
 
-  update(id, updates) {
-    const data = this.getAll();
-    const idx = data.findIndex(p => p.id === id);
-    if (idx === -1) return null;
-    data[idx] = { ...data[idx], ...updates };
-    this.save(data);
-    return data[idx];
+  async delete(id) {
+    await fetch(API + '/' + id, { method: 'DELETE' });
+    this._cache = null;
   },
 
-  delete(id) {
-    const data = this.getAll().filter(p => p.id !== id);
-    this.save(data);
+  async getById(id) {
+    const data = await this.getAll();
+    return data.find(p => p.id === id) || null;
   },
 
-  getById(id) {
-    return this.getAll().find(p => p.id === id) || null;
+  async getEmpleados(force) {
+    if (force || !this._empleados) {
+      const res = await fetch(API_EMPLEADOS);
+      this._empleados = await res.json();
+    }
+    return this._empleados;
+  },
+
+  getDepartamento(value) {
+    const map = { 'profesores': 'TEACHERS', 'administrativos': 'ADMINISTRACION', 'mantenimiento': 'MANTENIMIENTO' };
+    return map[value] || '';
+  },
+
+  getSubgrupoPosicion(value) {
+    const map = {
+      'preescolar': 'PREESCOLAR', 'primaria': 'PRIMARIA', 'secundaria': 'SECUNDARIA',
+      'educacion fisica': 'EDUC. FISICA', 'psicologia': 'PSICOLOGIA', 'learning support': 'LEARNING LAB'
+    };
+    return map[value] || '';
   },
 
   generateId() {
@@ -52,8 +81,8 @@ const Store = {
     return this.getMonths()[num - 1] || '';
   },
 
-  getStats() {
-    const data = this.getAll();
+  async getStats() {
+    const data = await this.getAll();
     return {
       total: data.length,
       pendientes: data.filter(p => p.status === 'pendiente').length,
@@ -62,8 +91,8 @@ const Store = {
     };
   },
 
-  getMonthlyData(year) {
-    return this.getMonthlyDataFromList(this.getAll(), year);
+  async getMonthlyData(year) {
+    return this.getMonthlyDataFromList(await this.getAll(), year);
   },
 
   getMonthlyDataFromList(data, year) {
@@ -78,8 +107,8 @@ const Store = {
     return months;
   },
 
-  getFiltered(filters) {
-    let data = this.getAll();
+  async getFiltered(filters) {
+    let data = await this.getAll();
     if (filters.grupo) data = data.filter(p => p.grupo === filters.grupo);
     if (filters.subgrupo) data = data.filter(p => p.subgrupo === filters.subgrupo);
     if (filters.estado) data = data.filter(p => p.status === filters.estado);
@@ -97,19 +126,16 @@ const Store = {
   }
 };
 
-// ========== APP STATE ==========
 const App = {
-  currentUser: null, // 'empleado' | 'admin'
+  currentUser: null,
   currentView: null,
   editingId: null,
 
   init() {
     this.bindEvents();
     this.showLogin();
-    this.renderAdminCharts();
   },
 
-  // ========== AUTH ==========
   showLogin() {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-screen').style.display = 'none';
@@ -157,7 +183,6 @@ const App = {
     this.showLogin();
   },
 
-  // ========== SIDEBAR ==========
   setupSidebar() {
     const isAdmin = this.currentUser === 'admin';
     const userBadge = document.querySelector('.user-badge');
@@ -184,8 +209,7 @@ const App = {
     });
   },
 
-  // ========== NAVIGATION ==========
-  navigate(view) {
+  async navigate(view) {
     this.currentView = view;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -197,7 +221,7 @@ const App = {
     if (view === 'dashboard') this.renderAdminDashboard();
     if (view === 'permisos') this.renderAllPermisos();
     if (view === 'reportes') this.renderReportes();
-    if (view === 'form') this.resetForm();
+    if (view === 'form') await this.resetForm();
     if (view === 'mis-permisos') this.renderMisPermisos();
 
     if (window.innerWidth <= 768) {
@@ -206,7 +230,6 @@ const App = {
     }
   },
 
-  // ========== TOAST ==========
   toast(message, type = 'success') {
     const el = document.getElementById('toast');
     el.textContent = message;
@@ -215,8 +238,7 @@ const App = {
     this._toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
   },
 
-  // ========== FORM HANDLING ==========
-  resetForm() {
+  async resetForm() {
     const form = document.getElementById('permiso-form');
     form.reset();
     this.editingId = null;
@@ -226,6 +248,55 @@ const App = {
     document.getElementById('form-ausencia').value = '';
     document.getElementById('form-hora-group').style.display = 'none';
     document.getElementById('form-hora').value = '';
+  },
+
+  _fillEmpleado(emp) {
+    document.getElementById('form-empleado').value = emp.nombre + ' ' + emp.apellido;
+    document.getElementById('empleados-dropdown').classList.remove('show');
+    const grupoMap = { TEACHERS: 'profesores', ADMINISTRACION: 'administrativos', MANTENIMIENTO: 'mantenimiento' };
+    const subgrupoMap = {
+      PREESCOLAR: 'preescolar', PRIMARIA: 'primaria', SECUNDARIA: 'secundaria',
+      'EDUC. FISICA': 'educacion fisica', PSICOLOGIA: 'psicologia', 'LEARNING LAB': 'learning support'
+    };
+    const grupo = grupoMap[emp.departamento] || '';
+    document.getElementById('form-grupo').value = grupo;
+    this.handleGrupoChange();
+    const subgrupo = subgrupoMap[emp.posicion] || '';
+    if (subgrupo && grupo === 'profesores') {
+      document.getElementById('form-subgrupo').value = subgrupo;
+    }
+  },
+
+  handleEmpleadoInput() {
+    const input = document.getElementById('form-empleado');
+    const val = input.value.trim().toLowerCase();
+    const dropdown = document.getElementById('empleados-dropdown');
+
+    if (!val) {
+      dropdown.classList.remove('show');
+      return;
+    }
+
+    Store.getEmpleados().then(empleados => {
+      const filtered = empleados.filter(e =>
+        (e.nombre + ' ' + e.apellido).toLowerCase().includes(val)
+      );
+
+      if (filtered.length === 0) {
+        dropdown.innerHTML = '<div class="ac-empty">Sin resultados</div>';
+        dropdown.classList.add('show');
+        return;
+      }
+
+      dropdown.innerHTML = filtered.map((e, i) => {
+        const full = e.nombre + ' ' + e.apellido;
+        const deptLabel = e.departamento === 'TEACHERS' ? 'Prof' : e.departamento === 'ADMINISTRACION' ? 'Admin' : 'Mant';
+        return `<div class="ac-item${i === 0 ? ' highlighted' : ''}" data-idx="${i}">${full} <span class="ac-dept">(${deptLabel})</span></div>`;
+      }).join('');
+      dropdown.classList.add('show');
+
+      dropdown._data = filtered;
+    });
   },
 
   handleGrupoChange() {
@@ -248,6 +319,32 @@ const App = {
     }
   },
 
+  handleEmpleadoKeydown(e) {
+    const dropdown = document.getElementById('empleados-dropdown');
+    if (!dropdown.classList.contains('show')) return;
+
+    const items = dropdown.querySelectorAll('.ac-item');
+    let idx = Array.from(items).findIndex(el => el.classList.contains('highlighted'));
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items.forEach(el => el.classList.remove('highlighted'));
+      idx = Math.min(idx + 1, items.length - 1);
+      if (idx >= 0) items[idx].classList.add('highlighted');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items.forEach(el => el.classList.remove('highlighted'));
+      idx = Math.max(idx - 1, 0);
+      items[idx].classList.add('highlighted');
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (idx >= 0) {
+        const data = dropdown._data;
+        if (data && data[idx]) this._fillEmpleado(data[idx]);
+      }
+    }
+  },
+
   handleAusenciaChange() {
     const val = document.getElementById('form-ausencia').value;
     const group = document.getElementById('form-hora-group');
@@ -267,7 +364,7 @@ const App = {
     }
   },
 
-  handleFormSubmit(e) {
+  async handleFormSubmit(e) {
     e.preventDefault();
     const data = {
       empleado: document.getElementById('form-empleado').value.trim(),
@@ -291,16 +388,14 @@ const App = {
     }
 
     if (this.editingId) {
-      Store.update(this.editingId, data);
+      await Store.update(this.editingId, data);
       this.toast('Permiso actualizado exitosamente.', 'success');
     } else {
-      const permiso = {
-        id: Store.generateId(),
+      await Store.add({
         ...data,
         status: 'pendiente',
         fechaSolicitud: new Date().toISOString().split('T')[0],
-      };
-      Store.add(permiso);
+      });
       this.toast('Permiso solicitado exitosamente.', 'success');
     }
 
@@ -310,10 +405,9 @@ const App = {
     }
   },
 
-  // ========== EMPLOYEE: MIS PERMISOS ==========
-  renderMisPermisos() {
+  async renderMisPermisos() {
     const container = document.getElementById('mis-permisos-list');
-    const data = Store.getAll();
+    const data = await Store.getAll();
 
     if (data.length === 0) {
       container.innerHTML = `
@@ -326,7 +420,6 @@ const App = {
       return;
     }
 
-    const months = Store.getMonths();
     container.innerHTML = `
       <div class="table-container">
         <table>
@@ -361,9 +454,8 @@ const App = {
     `;
   },
 
-  // ========== ADMIN: DASHBOARD ==========
-  renderAdminDashboard() {
-    const stats = Store.getStats();
+  async renderAdminDashboard() {
+    const stats = await Store.getStats();
     document.getElementById('stat-total').textContent = stats.total;
     document.getElementById('stat-pendientes').textContent = stats.pendientes;
     document.getElementById('stat-aprobados').textContent = stats.aprobados;
@@ -371,12 +463,12 @@ const App = {
     this.renderAdminCharts();
   },
 
-  renderAdminCharts() {
+  async renderAdminCharts() {
     const canvas = document.getElementById('chart-mensual');
     if (!canvas) return;
 
     const months = Store.getMonths();
-    const data = Store.getMonthlyData(new Date().getFullYear());
+    const data = await Store.getMonthlyData(new Date().getFullYear());
 
     if (window._permisoChart) {
       window._permisoChart.destroy();
@@ -414,9 +506,8 @@ const App = {
     });
   },
 
-  // ========== ADMIN: ALL PERMISOS ==========
-  renderAllPermisos(filterData, containerId) {
-    const data = filterData || Store.getAll();
+  async renderAllPermisos(filterData, containerId) {
+    const data = filterData || await Store.getAll();
     const container = document.getElementById(containerId || 'permisos-list');
     if (!container) return;
 
@@ -484,13 +575,13 @@ const App = {
     `;
   },
 
-  handleStatusChange(id, status) {
-    Store.update(id, { status });
+  async handleStatusChange(id, status) {
+    await Store.update(id, { status });
     this.toast(`Estado actualizado a "${status}".`, 'info');
   },
 
-  editPermiso(id) {
-    const p = Store.getById(id);
+  async editPermiso(id) {
+    const p = await Store.getById(id);
     if (!p) return;
     this.navigate('form');
     this.editingId = id;
@@ -508,22 +599,21 @@ const App = {
     document.getElementById('form-motivo').value = p.motivo;
   },
 
-  deletePermiso(id) {
+  async deletePermiso(id) {
     if (!confirm('¿Está seguro de eliminar este permiso?')) return;
-    Store.delete(id);
+    await Store.delete(id);
     this.toast('Permiso eliminado.', 'success');
-    this.renderAllPermisos(Store.getAll());
+    this.renderAllPermisos(await Store.getAll());
   },
 
-  // ========== ADMIN: REPORTES ==========
-  renderReportes() {
-    const all = Store.getAll();
+  async renderReportes() {
+    const all = await Store.getAll();
     document.getElementById('reporte-total').textContent = all.length;
 
     this.renderAllPermisos(all, 'reporte-permisos-list');
 
     const year = document.getElementById('filter-year')?.value || new Date().getFullYear();
-    const months = Store.getMonthlyData(parseInt(year));
+    const months = Store.getMonthlyDataFromList(all, parseInt(year));
     const canvas = document.getElementById('chart-reporte');
     if (canvas && window._reporteChart) {
       window._reporteChart.destroy();
@@ -551,7 +641,7 @@ const App = {
     }
   },
 
-  applyReportFilters() {
+  async applyReportFilters() {
     const filters = {
       grupo: document.getElementById('filter-grupo').value,
       subgrupo: document.getElementById('filter-subgrupo').value,
@@ -561,7 +651,7 @@ const App = {
       busqueda: document.getElementById('filter-busqueda').value,
     };
 
-    const data = Store.getFiltered(filters);
+    const data = await Store.getFiltered(filters);
     document.getElementById('reporte-total').textContent = data.length;
     this.renderAllPermisos(data, 'reporte-permisos-list');
 
@@ -626,9 +716,8 @@ const App = {
     this.applyReportFilters();
   },
 
-  // ========== EXPORT ==========
-  exportToExcel() {
-    const data = Store.getAll();
+  async exportToExcel() {
+    const data = await Store.getAll();
     if (data.length === 0) {
       this.toast('No hay datos para exportar.', 'error');
       return;
@@ -656,8 +745,8 @@ const App = {
     this.toast('Excel exportado exitosamente.', 'success');
   },
 
-  exportToPDF() {
-    const data = Store.getAll();
+  async exportToPDF() {
+    const data = await Store.getAll();
     if (data.length === 0) {
       this.toast('No hay datos para exportar.', 'error');
       return;
@@ -686,7 +775,6 @@ const App = {
     this.toast('PDF exportado exitosamente.', 'success');
   },
 
-  // ========== EVENTS ==========
   bindEvents() {
     document.querySelectorAll('.profile-btn').forEach(btn => {
       btn.addEventListener('click', () => this.handleProfileSelect(btn));
@@ -697,6 +785,16 @@ const App = {
       if (e.key === 'Enter') this.handleLogin();
     });
     document.getElementById('permiso-form').addEventListener('submit', (e) => this.handleFormSubmit(e));
+    document.getElementById('form-empleado').addEventListener('input', () => this.handleEmpleadoInput());
+    document.getElementById('form-empleado').addEventListener('keydown', (e) => this.handleEmpleadoKeydown(e));
+    document.getElementById('form-empleado').addEventListener('blur', () => setTimeout(() => document.getElementById('empleados-dropdown')?.classList.remove('show'), 200));
+    document.getElementById('empleados-dropdown').addEventListener('mousedown', (e) => {
+      const item = e.target.closest('.ac-item');
+      if (!item) return;
+      const idx = parseInt(item.dataset.idx);
+      const data = document.getElementById('empleados-dropdown')._data;
+      if (data && data[idx]) this._fillEmpleado(data[idx]);
+    });
     document.getElementById('form-grupo').addEventListener('change', () => this.handleGrupoChange());
     document.getElementById('form-ausencia').addEventListener('change', () => this.handleAusenciaChange());
     document.getElementById('btn-cancelar').addEventListener('click', () => this.resetForm());
@@ -712,11 +810,8 @@ const App = {
   }
 };
 
-// ========== INIT ==========
 document.addEventListener('DOMContentLoaded', () => {
   App.init();
-
-  // Expose for inline onclick handlers
   window.App = App;
   window.Store = Store;
 });

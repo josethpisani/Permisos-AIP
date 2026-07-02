@@ -74,7 +74,10 @@
                 <div class="form-grid">
                   <div class="form-group full-width">
                     <label for="form-empleado">Nombre del Empleado *</label>
-                    <input type="text" id="form-empleado" placeholder="Nombre completo" required>
+                    <div class="autocomplete-wrapper">
+                      <input type="text" id="form-empleado" placeholder="Escriba su nombre para buscar..." required autocomplete="off">
+                      <div class="autocomplete-dropdown" id="empleados-dropdown"></div>
+                    </div>
                   </div>
                   <div class="form-group">
                     <label for="form-grupo">Grupo *</label>

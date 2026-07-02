@@ -552,3 +552,59 @@ tbody tr:hover { background: var(--gray-50); }
 .toast.success { background: var(--secondary); }
 .toast.error { background: var(--danger); }
 .toast.info { background: var(--primary); }
+
+/* AUTOCOMPLETE */
+.autocomplete-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  display: none;
+}
+
+.autocomplete-dropdown.show {
+  display: block;
+}
+
+.autocomplete-dropdown .ac-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background 0.15s;
+}
+
+.autocomplete-dropdown .ac-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-dropdown .ac-item:hover,
+.autocomplete-dropdown .ac-item.highlighted {
+  background: var(--primary-light);
+}
+
+.autocomplete-dropdown .ac-item .ac-dept {
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-left: 4px;
+}
+
+.autocomplete-dropdown .ac-empty {
+  padding: 12px;
+  color: var(--gray-500);
+  text-align: center;
+  font-size: 13px;
+}
