@@ -1,5 +1,5 @@
-const API = '/api/permisos';
-const API_EMPLEADOS = '/api/empleados';
+const API = '/.netlify/functions/api/api/permisos';
+const API_EMPLEADOS = '/.netlify/functions/api/api/empleados';
 
 const Store = {
   _cache: null,
