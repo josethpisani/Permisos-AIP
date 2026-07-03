@@ -130,6 +130,7 @@ const App = {
   currentUser: null,
   currentView: null,
   editingId: null,
+  currentEmpleado: null,
 
   init() {
     this.bindEvents();
@@ -251,7 +252,8 @@ const App = {
   },
 
   _fillEmpleado(emp) {
-    document.getElementById('form-empleado').value = emp.nombre + ' ' + emp.apellido;
+    this.currentEmpleado = emp.nombre + ' ' + emp.apellido;
+    document.getElementById('form-empleado').value = this.currentEmpleado;
     document.getElementById('empleados-dropdown').classList.remove('show');
     const grupoMap = { TEACHERS: 'profesores', ADMINISTRACION: 'administrativos', MANTENIMIENTO: 'mantenimiento' };
     const subgrupoMap = {
@@ -402,19 +404,24 @@ const App = {
     this.resetForm();
     if (this.currentUser === 'admin') {
       this.navigate('permisos');
+    } else {
+      this.navigate('mis-permisos');
     }
   },
 
   async renderMisPermisos() {
     const container = document.getElementById('mis-permisos-list');
-    const data = await Store.getAll();
+    const all = await Store.getAll();
+    const data = this.currentEmpleado
+      ? all.filter(p => p.empleado.toLowerCase() === this.currentEmpleado.toLowerCase())
+      : [];
 
     if (data.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">📋</div>
-          <h3>No hay permisos registrados</h3>
-          <p>Utilice el formulario para solicitar un permiso.</p>
+          <h3>${this.currentEmpleado ? 'Sin permisos registrados' : 'Seleccione su nombre en el formulario primero'}</h3>
+          <p>${this.currentEmpleado ? 'Aún no ha solicitado ningún permiso.' : 'Vaya a "Solicitar Permiso", seleccione su nombre y guarde un permiso para verlo aquí.'}</p>
         </div>
       `;
       return;
