@@ -1,18 +1,15 @@
 {
   "name": "formulario-permisos-aip",
   "version": "1.0.0",
-  "description": "",
-  "main": "netlify/functions/api.js",
+  "description": "Sistema de gestión de permisos del personal AIP",
+  "main": "server.js",
   "scripts": {
-    "start": "node netlify/functions/api.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.19.2",
     "pg": "^8.12.0",
-    "serverless-http": "^3.2.0"
+    "cors": "^2.8.5"
   }
 }
